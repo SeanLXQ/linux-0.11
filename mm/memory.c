@@ -234,6 +234,11 @@ int copy_page_tables(unsigned long from,unsigned long to,long size)
     // 第一项开始复制页表项，并且新页表的最初所有项都是有效的。然后取得源地址和
     // 目的地址的其实目录项指针(from_dir 和 to_dir).再根据参数给出的长度size计
     // 算要复制的内存块占用的页表数(即目录项数)。
+	/*
+	*0x3fffff是4MB，是一个页表的管辖范围，二进制是22个1，||的两边必须同时为0，所以from和
+	*to的后22位必须都是0，即4MB的整数倍，意思是一个页表对应4MB连续的线形地址空间必须是从
+	*0x000000开始的4MB的整数倍的线性地址，不能是任意地址开始的4MB，才符合分页的要求
+	*/
 	if ((from&0x3fffff) || (to&0x3fffff))
 		panic("copy_page_tables called with wrong alignment");
 	from_dir = (unsigned long *) ((from>>20) & 0xffc); /* _pg_dir = 0 */
@@ -272,6 +277,9 @@ int copy_page_tables(unsigned long from,unsigned long to,long size)
 			this_page = *from_page_table;
 			if (!(1 & this_page))
 				continue;
+			/**
+			*设置页表属性，2是010，～2是101，代表用户、只读、存在
+			*/
 			this_page &= ~2;
 			*to_page_table = this_page;
             // 如果该页表所指物理页面的地址在1MB以上，则需要设置内存页面映射数
@@ -287,11 +295,11 @@ int copy_page_tables(unsigned long from,unsigned long to,long size)
             // 因为现在开始有两个进程公用内存区了。若其中1个进程需要进行写操作，
             // 则可以通过页异常写保护处理为执行写操作的进程匹配1页新空闲页面，也
             // 即进行写时复制(copy on write)操作。
-			if (this_page > LOW_MEM) {
+			if (this_page > LOW_MEM) {//1MB以内的内核分区不参与用户分页管理
 				*from_page_table = this_page;
 				this_page -= LOW_MEM;
 				this_page >>= 12;
-				mem_map[this_page]++;
+				mem_map[this_page]++;//增加引用计数，参看mem_init
 			}
 		}
 	}
