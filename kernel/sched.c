@@ -146,15 +146,15 @@ void schedule(void)
             // 如果设置过任务的定时值alarm，并且已经过期(alarm<jiffies)，则在
             // 信号位图中置SIGALRM信号，即向任务发送SIGALARM信号。然后清alarm。
             // 该信号的默认操作是终止进程。jiffies是系统从开机开始算起的滴答数(10ms/滴答)。
-			if ((*p)->alarm && (*p)->alarm < jiffies) {
+			if ((*p)->alarm && (*p)->alarm < jiffies) { /*设置了定时器，并且定时器定时已过*/
 					(*p)->signal |= (1<<(SIGALRM-1));
 					(*p)->alarm = 0;
 				}
             // 如果信号位图中除被阻塞的信号外还有其他信号，并且任务处于可中断状态，则
             // 置任务为就绪状态。其中'~(_BLOCKABLE & (*p)->blocked)'用于忽略被阻塞的信号，但
-            // SIGKILL 和SIGSTOP不能呗阻塞。
+            // SIGKILL 和SIGSTOP不能被阻塞。
 			if (((*p)->signal & ~(_BLOCKABLE & (*p)->blocked)) &&
-			(*p)->state==TASK_INTERRUPTIBLE)
+			(*p)->state==TASK_INTERRUPTIBLE)/*第一次进程0调度是状态是可中断状态，但是信号位图没有其他的信号*/
 				(*p)->state=TASK_RUNNING;
 		}
 
@@ -171,7 +171,7 @@ void schedule(void)
 		while (--i) {
 			if (!*--p)
 				continue;
-			if ((*p)->state == TASK_RUNNING && (*p)->counter > c)
+			if ((*p)->state == TASK_RUNNING && (*p)->counter > c)/*找出就绪态中counter最大的进程*/
 				c = (*p)->counter, next = i;
 		}
         // 如果比较得出有counter值不等于0的结果，或者系统中没有一个可运行的任务存在(此时c
