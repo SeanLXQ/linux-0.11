@@ -195,6 +195,9 @@ void schedule(void)
 // pause()返回值应该是-1，并且errno被置为EINTR。这里还没有完全实现(直到0.95版)
 int sys_pause(void)
 {
+	/*
+	*将进程设置为可中断状态，如果产生某种中断，或者其他进程给这个进程发送信号，才会将状态变为就绪态。
+	*/
 	current->state = TASK_INTERRUPTIBLE;
 	schedule();
 	return 0;
