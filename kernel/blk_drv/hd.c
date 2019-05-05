@@ -54,8 +54,8 @@ static int NR_HD = 0;
 #endif
 
 static struct hd_struct {
-	long start_sect;
-	long nr_sects;
+	long start_sect;//起始扇区号
+	long nr_sects;//总扇区数
 } hd[5*MAX_HD]={{0,0},};
 
 #define port_read(port,buf,nr) \
@@ -67,8 +67,10 @@ __asm__("cld;rep;outsw"::"d" (port),"S" (buf),"c" (nr))
 extern void hd_interrupt(void);
 extern void rd_load(void);
 
-/* This may be used only once, enforced by 'static int callable' */
-int sys_setup(void * BIOS)
+/* This may be used only once, enforced by 'static int callable' 
+*仅被调用1次
+*/
+int sys_setup(void * BIOS)//对比调用可以看出BIOS就是drive_info
 {
 	static int callable = 1;
 	int i,drive;
@@ -76,24 +78,27 @@ int sys_setup(void * BIOS)
 	struct partition *p;
 	struct buffer_head * bh;
 
-	if (!callable)
+	if (!callable)//控制只调用一次
 		return -1;
 	callable = 0;
 #ifndef HD_TYPE
 	for (drive=0 ; drive<2 ; drive++) {
-		hd_info[drive].cyl = *(unsigned short *) BIOS;
-		hd_info[drive].head = *(unsigned char *) (2+BIOS);
+		hd_info[drive].cyl = *(unsigned short *) BIOS;//柱面数
+		hd_info[drive].head = *(unsigned char *) (2+BIOS);//磁头数
 		hd_info[drive].wpcom = *(unsigned short *) (5+BIOS);
 		hd_info[drive].ctl = *(unsigned char *) (8+BIOS);
 		hd_info[drive].lzone = *(unsigned short *) (12+BIOS);
-		hd_info[drive].sect = *(unsigned char *) (14+BIOS);
+		hd_info[drive].sect = *(unsigned char *) (14+BIOS);//每磁道扇区数
 		BIOS += 16;
 	}
-	if (hd_info[1].cyl)
+	if (hd_info[1].cyl)//判断有几个硬盘
 		NR_HD=2;
 	else
 		NR_HD=1;
 #endif
+	/*
+	*一个物理硬盘最多可以分4个逻辑盘，0是物理盘，1-4是逻辑盘，共5个，第一个物理盘是0*5，第2个物理盘是1*5
+	*/
 	for (i=0 ; i<NR_HD ; i++) {
 		hd[i*5].start_sect = 0;
 		hd[i*5].nr_sects = hd_info[i].head*
@@ -133,6 +138,7 @@ int sys_setup(void * BIOS)
 		hd[i*5].start_sect = 0;
 		hd[i*5].nr_sects = 0;
 	}
+	//第1个物理盘设备号是0x300，第2个是0x305，读每个物理硬盘的0号块，即引导块，有分区信息
 	for (drive=0 ; drive<NR_HD ; drive++) {
 		if (!(bh = bread(0x300 + drive*5,0))) {
 			printk("Unable to read partition table of drive %d\n\r",
