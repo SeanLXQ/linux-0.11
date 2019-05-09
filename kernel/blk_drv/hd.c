@@ -335,7 +335,7 @@ void do_hd_request(void)
 		}
 		port_write(HD_DATA,CURRENT->buffer,256);
 	} else if (CURRENT->cmd == READ) {
-		hd_out(dev,nsect,sec,head,cyl,WIN_READ,&read_intr);
+		hd_out(dev,nsect,sec,head,cyl,WIN_READ,&read_intr); //后面读取数据
 	} else
 		panic("unknown hd-command");
 }
