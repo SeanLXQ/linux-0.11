@@ -54,8 +54,8 @@ static int NR_HD = 0;
 #endif
 
 static struct hd_struct {
-	long start_sect;//èµ·å§‹æ‰‡åŒºå·
-	long nr_sects;//æ€»æ‰‡åŒºæ•°
+	long start_sect;
+	long nr_sects;
 } hd[5*MAX_HD]={{0,0},};
 
 #define port_read(port,buf,nr) \
@@ -67,10 +67,8 @@ __asm__("cld;rep;outsw"::"d" (port),"S" (buf),"c" (nr))
 extern void hd_interrupt(void);
 extern void rd_load(void);
 
-/* This may be used only once, enforced by 'static int callable' 
-*ä»…è¢«è°ƒç”¨1æ¬¡
-*/
-int sys_setup(void * BIOS)//å¯¹æ¯”è°ƒç”¨å¯ä»¥çœ‹å‡ºBIOSå°±æ˜¯drive_info
+/* This may be used only once, enforced by 'static int callable' */
+int sys_setup(void * BIOS)
 {
 	static int callable = 1;
 	int i,drive;
@@ -78,27 +76,24 @@ int sys_setup(void * BIOS)//å¯¹æ¯”è°ƒç”¨å¯ä»¥çœ‹å‡ºBIOSå°±æ˜¯drive_info
 	struct partition *p;
 	struct buffer_head * bh;
 
-	if (!callable)//æ§åˆ¶åªè°ƒç”¨ä¸€æ¬¡
+	if (!callable)
 		return -1;
 	callable = 0;
 #ifndef HD_TYPE
 	for (drive=0 ; drive<2 ; drive++) {
-		hd_info[drive].cyl = *(unsigned short *) BIOS;//æŸ±é¢æ•°
-		hd_info[drive].head = *(unsigned char *) (2+BIOS);//ç£å¤´æ•°
+		hd_info[drive].cyl = *(unsigned short *) BIOS;
+		hd_info[drive].head = *(unsigned char *) (2+BIOS);
 		hd_info[drive].wpcom = *(unsigned short *) (5+BIOS);
 		hd_info[drive].ctl = *(unsigned char *) (8+BIOS);
 		hd_info[drive].lzone = *(unsigned short *) (12+BIOS);
-		hd_info[drive].sect = *(unsigned char *) (14+BIOS);//æ¯ç£é“æ‰‡åŒºæ•°
+		hd_info[drive].sect = *(unsigned char *) (14+BIOS);
 		BIOS += 16;
 	}
-	if (hd_info[1].cyl)//åˆ¤æ–­æœ‰å‡ ä¸ªç¡¬ç›˜
+	if (hd_info[1].cyl)
 		NR_HD=2;
 	else
 		NR_HD=1;
 #endif
-	/*
-	*ä¸€ä¸ªç‰©ç†ç¡¬ç›˜æœ€å¤šå¯ä»¥åˆ†4ä¸ªé€»è¾‘ç›˜ï¼Œ0æ˜¯ç‰©ç†ç›˜ï¼Œ1-4æ˜¯é€»è¾‘ç›˜ï¼Œå…±5ä¸ªï¼Œç¬¬ä¸€ä¸ªç‰©ç†ç›˜æ˜¯0*5ï¼Œç¬¬2ä¸ªç‰©ç†ç›˜æ˜¯1*5
-	*/
 	for (i=0 ; i<NR_HD ; i++) {
 		hd[i*5].start_sect = 0;
 		hd[i*5].nr_sects = hd_info[i].head*
@@ -138,7 +133,6 @@ int sys_setup(void * BIOS)//å¯¹æ¯”è°ƒç”¨å¯ä»¥çœ‹å‡ºBIOSå°±æ˜¯drive_info
 		hd[i*5].start_sect = 0;
 		hd[i*5].nr_sects = 0;
 	}
-	//ç¬¬1ä¸ªç‰©ç†ç›˜è®¾å¤‡å·æ˜¯0x300ï¼Œç¬¬2ä¸ªæ˜¯0x305ï¼Œè¯»æ¯ä¸ªç‰©ç†ç¡¬ç›˜çš„0å·å—ï¼Œå³å¼•å¯¼å—ï¼Œæœ‰åˆ†åŒºä¿¡æ¯
 	for (drive=0 ; drive<NR_HD ; drive++) {
 		if (!(bh = bread(0x300 + drive*5,0))) {
 			printk("Unable to read partition table of drive %d\n\r",
@@ -320,9 +314,9 @@ void do_hd_request(void)
 	sec++;
 	nsect = CURRENT->nr_sectors;
 	if (reset) {
-		reset = 0;
-		recalibrate = 1;
-		reset_hd(CURRENT_DEV);
+		reset = 0;//·ÀÖ¹¶à´ÎÖ´ĞĞif
+		recalibrate = 1;//ÖÃÎ»£¬±£Ö¤Ö´ĞĞÏÂÃæµÄif
+		reset_hd(CURRENT_DEV);//½«Í¨¹ıµ÷ÓÃhd_outÏò´ÅÅÌ·¢ËÍwinspecifyÃüÁî£¬½¨Á¢Ó²ÅÌ¶ÁÅÌ±ØÒªµÄ²ÎÊı
 		return;
 	}
 	if (recalibrate) {
@@ -346,17 +340,17 @@ void do_hd_request(void)
 		panic("unknown hd-command");
 }
 
-// ç¡¬ç›˜ç³»ç»Ÿåˆå§‹åŒ–
-// è®¾ç½®ç¡¬ç›˜ä¸­æ–­æè¿°ç¬¦ï¼Œå¹¶å…è®¸ç¡¬ç›˜æ§åˆ¶å™¨å‘é€ä¸­æ–­è¯·æ±‚ä¿¡å·ã€‚
-// è¯¥å‡½æ•°è®¾ç½®ç¡¬ç›˜è®¾å¤‡çš„è¯·æ±‚é¡¹å¤„ç†å‡½æ•°æŒ‡é’ˆä¸ºdo_hd_request(),ç„¶åè®¾ç½®ç¡¬ç›˜ä¸­æ–­é—¨
-// æè¿°ç¬¦ã€‚Hd_interrupt(kernel/system_call.s)æ˜¯å…¶ä¸­æ–­å¤„ç†è¿‡ç¨‹ã€‚ç¡¬ç›˜ä¸­æ–­å·ä¸º
-// int 0x2E(46),å¯¹åº”8259AèŠ¯ç‰‡çš„ä¸­æ–­è¯·æ±‚ä¿¡å·IRQ13.æ¥ç€å¤ä½æ¥è”çš„ä¸»8250A int2
-// çš„å±è”½ä½ï¼Œå…è®¸ä»ç‰‡å‘å‡ºä¸­æ–­è¯·æ±‚ä¿¡å·ã€‚å†å¤ä½ç¡¬ç›˜çš„ä¸­æ–­è¯·æ±‚å±è”½ä½(åœ¨ä»ç‰‡ä¸Š)ï¼Œ
-// å…è®¸ç¡¬ç›˜æ§åˆ¶å™¨å‘é€ä¸­æ–­ä¿¡å·ã€‚ä¸­æ–­æè¿°ç¬¦è¡¨IDTå†…ä¸­æ–­é—¨æè¿°ç¬¦è®¾ç½®å®set_intr_gate().
+// Ó²ÅÌÏµÍ³³õÊ¼»¯
+// ÉèÖÃÓ²ÅÌÖĞ¶ÏÃèÊö·û£¬²¢ÔÊĞíÓ²ÅÌ¿ØÖÆÆ÷·¢ËÍÖĞ¶ÏÇëÇóĞÅºÅ¡£
+// ¸Ãº¯ÊıÉèÖÃÓ²ÅÌÉè±¸µÄÇëÇóÏî´¦Àíº¯ÊıÖ¸ÕëÎªdo_hd_request(),È»ºóÉèÖÃÓ²ÅÌÖĞ¶ÏÃÅ
+// ÃèÊö·û¡£Hd_interrupt(kernel/system_call.s)ÊÇÆäÖĞ¶Ï´¦Àí¹ı³Ì¡£Ó²ÅÌÖĞ¶ÏºÅÎª
+// int 0x2E(46),¶ÔÓ¦8259AĞ¾Æ¬µÄÖĞ¶ÏÇëÇóĞÅºÅIRQ13.½Ó×Å¸´Î»½ÓÁªµÄÖ÷8250A int2
+// µÄÆÁ±ÎÎ»£¬ÔÊĞí´ÓÆ¬·¢³öÖĞ¶ÏÇëÇóĞÅºÅ¡£ÔÙ¸´Î»Ó²ÅÌµÄÖĞ¶ÏÇëÇóÆÁ±ÎÎ»(ÔÚ´ÓÆ¬ÉÏ)£¬
+// ÔÊĞíÓ²ÅÌ¿ØÖÆÆ÷·¢ËÍÖĞ¶ÏĞÅºÅ¡£ÖĞ¶ÏÃèÊö·û±íIDTÄÚÖĞ¶ÏÃÅÃèÊö·ûÉèÖÃºêset_intr_gate().
 void hd_init(void)
 {
 	blk_dev[MAJOR_NR].request_fn = DEVICE_REQUEST;      // do_hd_request()
 	set_intr_gate(0x2E,&hd_interrupt);
-	outb_p(inb_p(0x21)&0xfb,0x21);                      // å¤ä½æ¥è”çš„ä¸»8259A int2çš„å±è”½ä½
-	outb(inb_p(0xA1)&0xbf,0xA1);                        // å¤ä½ç¡¬ç›˜ä¸­æ–­è¯·æ±‚å±è”½ä½(åœ¨ä»ç‰‡ä¸Š)
+	outb_p(inb_p(0x21)&0xfb,0x21);                      // ¸´Î»½ÓÁªµÄÖ÷8259A int2µÄÆÁ±ÎÎ»
+	outb(inb_p(0xA1)&0xbf,0xA1);                        // ¸´Î»Ó²ÅÌÖĞ¶ÏÇëÇóÆÁ±ÎÎ»(ÔÚ´ÓÆ¬ÉÏ)
 }
