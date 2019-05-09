@@ -320,9 +320,9 @@ void do_hd_request(void)
 		return;
 	}
 	if (recalibrate) {
-		recalibrate = 0;
+		recalibrate = 0;//置位，防止多次执行if
 		hd_out(dev,hd_info[CURRENT_DEV].sect,0,0,0,
-			WIN_RESTORE,&recal_intr);
+			WIN_RESTORE,&recal_intr);//将向硬盘发送win restore命令，将磁头移动到0柱面，以便从硬盘上读取数据
 		return;
 	}	
 	if (CURRENT->cmd == WRITE) {
