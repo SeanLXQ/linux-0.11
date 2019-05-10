@@ -154,7 +154,7 @@ int sys_setup(void * BIOS)
 	if (NR_HD)
 		printk("Partition table%s ok.\n\r",(NR_HD>1)?"s":"");
 	rd_load();
-	mount_root();
+	mount_root();//加载根文件系统
 	return (0);
 }
 
@@ -179,7 +179,7 @@ static int win_result(void)
 
 static void hd_out(unsigned int drive,unsigned int nsect,unsigned int sect,
 		unsigned int head,unsigned int cyl,unsigned int cmd,
-		void (*intr_addr)(void))
+		void (*intr_addr)(void))//cmd，initr_addr比较WIN_READ, read_intr
 {
 	register int port asm("dx");
 
@@ -187,7 +187,7 @@ static void hd_out(unsigned int drive,unsigned int nsect,unsigned int sect,
 		panic("Trying to write bad sector");
 	if (!controller_ready())
 		panic("HD controller not ready");
-	do_hd = intr_addr;
+	do_hd = intr_addr;//根据传入参数决定是read_intr wirte_intr
 	outb_p(hd_info[drive].ctl,HD_CMD);
 	port=HD_DATA;
 	outb_p(hd_info[drive].wpcom>>2,++port);
