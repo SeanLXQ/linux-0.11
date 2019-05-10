@@ -81,7 +81,7 @@ void rd_load(void)
 		return;
 	printk("Ram disk: %d bytes, starting at 0x%x\n", rd_length,
 		(int) rd_start);
-	if (MAJOR(ROOT_DEV) != 2)
+	if (MAJOR(ROOT_DEV) != 2)//如果跟根设备不是软盘
 		return;
 	bh = breada(ROOT_DEV,block+1,block,block+2,-1);
 	if (!bh) {
@@ -90,11 +90,11 @@ void rd_load(void)
 	}
 	*((struct d_super_block *) &s) = *((struct d_super_block *) bh->b_data);
 	brelse(bh);
-	if (s.s_magic != SUPER_MAGIC)
+	if (s.s_magic != SUPER_MAGIC)//如果不等，说明不是minix文件系统
 		/* No ram disk image present, assume normal floppy boot */
 		return;
-	nblocks = s.s_nzones << s.s_log_zone_size;
-	if (nblocks > (rd_length >> BLOCK_SIZE_BITS)) {
+	nblocks = s.s_nzones << s.s_log_zone_size;  //算出虚拟盘的块数
+	if (nblocks > (rd_length >> BLOCK_SIZE_BITS)) { 
 		printk("Ram disk image too big!  (%d blocks, %d avail)\n", 
 			nblocks, rd_length >> BLOCK_SIZE_BITS);
 		return;
@@ -102,7 +102,7 @@ void rd_load(void)
 	printk("Loading %d bytes into ram disk... 0000k", 
 		nblocks << BLOCK_SIZE_BITS);
 	cp = rd_start;
-	while (nblocks) {
+	while (nblocks) {//将软盘上准备格式化的根文件系统复制到虚拟盘上
 		if (nblocks > 2) 
 			bh = breada(ROOT_DEV, block, block+1, block+2, -1);
 		else
@@ -121,5 +121,5 @@ void rd_load(void)
 		i++;
 	}
 	printk("\010\010\010\010\010done \n");
-	ROOT_DEV=0x0101;
+	ROOT_DEV=0x0101;//设置虚拟盘为根文件设备
 }
